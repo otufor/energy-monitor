@@ -35,7 +35,7 @@ jobs:
         run: python scripts/upload_r2.py notebooks/output/daily_$(date +%Y-%m-%d).html
 
       - name: Notify LINE
-        if: ${{ secrets.LINE_TOKEN != '' }}
+        if: secrets.LINE_TOKEN != ''
         env:
           LINE_TOKEN: ${{ secrets.LINE_TOKEN }}
         run: |
