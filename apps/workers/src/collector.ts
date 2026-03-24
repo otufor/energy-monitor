@@ -28,13 +28,9 @@ export function extractSmartMeterData(appliances: NatureRemoAppliance[]) {
   const findProp = (epc: number) => props.find((p) => p.epc === epc);
   const getInt = (epc: number, fallback: number) =>
     findProp(epc) ? parseInt(findProp(epc)!.val, 10) : fallback;
-  const getFloat = (epc: number) => {
-    const prop = findProp(epc);
-    return prop ? parseInt(prop.val, 10) : 0;
-  };
 
-  const watts = getFloat(EPC_WATTS); // hex → W
-  const ampere = getFloat(EPC_AMPERE) / 10; // hex → A×10 → A
+  const watts = getInt(EPC_WATTS, 0); // W
+  const ampere = getInt(EPC_AMPERE, 0) / 10; // A×10 → A
   const cum_raw = getInt(EPC_CUM_FORWARD, 0);
   const coefficient = getInt(EPC_COEFFICIENT, 1); // 未設定時は 1
   const unitCode = getInt(EPC_UNIT, 0x01); // 未設定時は 0x01 (0.1 kWh)

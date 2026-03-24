@@ -32,11 +32,12 @@ powerRouter.get("/power/range", async (c) => {
     return c.json({ error: "from and to must be valid ISO 8601 date strings" }, 400);
   }
 
+  // Date オブジェクトで正規化することで +09:00 等の非UTC表記も UTC に統一する
   const toDb = (iso: string) =>
-    iso
+    new Date(iso)
+      .toISOString()
       .replace("T", " ")
-      .replace(/\.\d{3}Z$/, "")
-      .replace("Z", "");
+      .replace(/\.\d{3}Z$/, "");
 
   const { results } = await c.env.DB.prepare(
     `SELECT ts, watts, ampere, cum_raw, cum_kwh FROM power_log
