@@ -5,10 +5,11 @@
  */
 const port = process.argv[2] ?? "8787";
 const url = `http://localhost:${port}/dev/collect`;
+const apiKey = process.env.DEV_API_KEY ?? "dev";
 
 async function trigger() {
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: { "X-Api-Key": apiKey } });
     const json = await res.json();
     console.log(`[cron] ${new Date().toISOString()} → ${JSON.stringify(json)}`);
   } catch (e) {

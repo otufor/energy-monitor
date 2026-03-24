@@ -58,7 +58,7 @@ powerRouter.get("/summary/:date", async (c) => {
   const row = await c.env.DB.prepare(
     `SELECT
        ? AS date,
-       ROUND(MAX(cum_kwh) - MIN(cum_kwh), 3)                  AS total_kwh,
+       ROUND(COALESCE(MAX(cum_kwh) - MIN(cum_kwh), 0), 3)      AS total_kwh,
        MAX(watts)                                              AS peak_watts,
        (SELECT ts FROM power_log
         WHERE date(ts, '+9 hours') = ? ORDER BY watts DESC LIMIT 1) AS peak_time,
@@ -82,7 +82,7 @@ powerRouter.post("/export/daily", async (c) => {
     return c.json({ error: "date must be in YYYY-MM-DD format" }, 400);
   }
   const { results } = await c.env.DB.prepare(
-    `SELECT ts, watts, ampere, cum_kwh FROM power_log
+    `SELECT ts, watts, ampere, cum_raw, cum_kwh FROM power_log
      WHERE date(ts, '+9 hours') = ? ORDER BY ts ASC`,
   )
     .bind(date)
@@ -93,6 +93,7 @@ powerRouter.post("/export/daily", async (c) => {
     ...results.map((r) => `${r.ts},${r.watts},${r.ampere},${r.cum_raw},${r.cum_kwh}`),
   ].join("\n");
 
+  if (!c.env.R2) return c.json({ error: "R2 binding is not configured" }, 503);
   await c.env.R2.put(`daily/${date}.csv`, csv, {
     httpMetadata: { contentType: "text/csv" },
   });

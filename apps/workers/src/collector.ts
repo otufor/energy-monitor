@@ -50,7 +50,7 @@ export function extractSmartMeterData(appliances: NatureRemoAppliance[]) {
 }
 
 async function notifyLine(token: string, message: string) {
-  await fetch("https://notify-api.line.me/api/notify", {
+  const res = await fetch("https://notify-api.line.me/api/notify", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -58,6 +58,7 @@ async function notifyLine(token: string, message: string) {
     },
     body: `message=${encodeURIComponent(message)}`,
   });
+  if (!res.ok) throw new Error(`LINE Notify error: ${res.status}`);
 }
 
 export async function collector(env: Env) {
