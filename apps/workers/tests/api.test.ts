@@ -15,6 +15,8 @@ const makeEnv = (overrides?: Partial<Env>): Env => ({
   LINE_TOKEN: "test-line-token",
   COST_PER_KWH: "30",
   ALERT_THRESHOLD_WATTS: "3000",
+  API_KEY: "",
+  ALLOWED_ORIGINS: "",
   ...overrides,
 });
 
@@ -59,6 +61,107 @@ describe("GET /api/power/recent", () => {
 
     const bindArg = mockD1.prepare().bind.mock.calls[0][0];
     expect(bindArg).toBe(-60);
+  });
+});
+
+describe("GET /api/power/recent バリデーション", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it.each([
+    [0, "最小値未満"],
+    [-1, "負の値"],
+    [10081, "最大値超過"],
+  ])("minutes=%i (%s) は 400 を返す", async (minutes) => {
+    const res = await makeApp(makeEnv())(`/api/power/recent?minutes=${minutes}`);
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("GET /api/power/range", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("from と to を指定すると対応する期間のデータを返す", async () => {
+    const mockRows = [
+      { ts: "2025-01-01 00:01:00", watts: 800, ampere: 3.5, cum_raw: 1001, cum_kwh: 100.1 },
+    ];
+    mockD1.prepare.mockReturnValue({
+      bind: vi.fn().mockReturnValue({
+        all: vi.fn().mockResolvedValue({ results: mockRows }),
+      }),
+    });
+
+    const res = await makeApp(makeEnv())(
+      "/api/power/range?from=2025-01-01T00:00:00Z&to=2025-01-01T01:00:00Z",
+    );
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as Array<{ watts: number }>;
+    expect(json).toHaveLength(1);
+    expect(json[0].watts).toBe(800);
+  });
+
+  it("from が未指定の場合は 400 を返す", async () => {
+    const res = await makeApp(makeEnv())("/api/power/range?to=2025-01-01T01:00:00Z");
+    expect(res.status).toBe(400);
+  });
+
+  it("to が未指定の場合は 400 を返す", async () => {
+    const res = await makeApp(makeEnv())("/api/power/range?from=2025-01-01T00:00:00Z");
+    expect(res.status).toBe(400);
+  });
+
+  it("from が不正な日付文字列の場合は 400 を返す", async () => {
+    const res = await makeApp(makeEnv())(
+      "/api/power/range?from=not-a-date&to=2025-01-01T01:00:00Z",
+    );
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("GET /api/summary/:date バリデーション", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("date が YYYY-MM-DD 形式でない場合は 400 を返す", async () => {
+    const res = await makeApp(makeEnv())("/api/summary/2025-1-1");
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("POST /api/export/daily", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("指定した日付のデータを CSV として R2 に保存する", async () => {
+    const mockRows = [
+      { ts: "2025-01-01 00:01:00", watts: 800, ampere: 3.5, cum_raw: 1001, cum_kwh: 100.1 },
+    ];
+    mockD1.prepare.mockReturnValue({
+      bind: vi.fn().mockReturnValue({
+        all: vi.fn().mockResolvedValue({ results: mockRows }),
+      }),
+    });
+    const mockPut = vi.fn().mockResolvedValue(undefined);
+    const env = makeEnv({ R2: { put: mockPut } as unknown as R2Bucket });
+
+    const res = await makeApp(env)("/api/export/daily", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: "2025-01-01" }),
+    });
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as { ok: boolean; rows: number };
+    expect(json.ok).toBe(true);
+    expect(json.rows).toBe(1);
+    expect(mockPut).toHaveBeenCalledWith("daily/2025-01-01.csv", expect.stringContaining("800"), {
+      httpMetadata: { contentType: "text/csv" },
+    });
+  });
+
+  it("date が未指定の場合は 400 を返す", async () => {
+    const res = await makeApp(makeEnv())("/api/export/daily", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(400);
   });
 });
 
