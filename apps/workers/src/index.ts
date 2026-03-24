@@ -16,6 +16,16 @@ export interface Env {
 
 const app = new Hono<{ Bindings: Env }>();
 
+// セキュリティヘッダー
+app.use("*", async (c, next) => {
+  await next();
+  c.header("X-Content-Type-Options", "nosniff");
+  c.header("X-Frame-Options", "DENY");
+  c.header("X-XSS-Protection", "1; mode=block");
+  c.header("Content-Security-Policy", "default-src 'none'");
+  c.header("Referrer-Policy", "no-referrer");
+});
+
 // CORS: 環境変数 ALLOWED_ORIGINS (カンマ区切り) で制限
 app.use("*", async (c, next) => {
   const allowed = (c.env.ALLOWED_ORIGINS ?? "")

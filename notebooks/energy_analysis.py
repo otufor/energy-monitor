@@ -41,8 +41,26 @@ def _(mo):
 
 @app.cell
 def _(JST, api_url, datetime, json, minutes_slider, mo, urllib):
+    _ALLOWED_HOSTS = {
+        "localhost",
+        "127.0.0.1",
+        "energy-monitor-workers.mh076144.workers.dev",
+        "energy-monitor-notebook.workers.dev",
+    }
+
+    def _is_allowed_url(raw: str) -> bool:
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(raw)
+            return parsed.scheme in ("http", "https") and parsed.hostname in _ALLOWED_HOSTS
+        except Exception:
+            return False
+
     def fetch_json(path):
-        url = api_url.value.rstrip("/") + path
+        base = api_url.value.rstrip("/")
+        if not _is_allowed_url(base):
+            return {"error": f"Blocked: '{base}' is not an allowed API host"}
+        url = base + path
         try:
             with urllib.request.urlopen(url, timeout=10) as resp:
                 return json.loads(resp.read())
