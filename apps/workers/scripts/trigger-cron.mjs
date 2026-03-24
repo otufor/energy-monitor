@@ -22,7 +22,21 @@ const msToNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
 
 console.log(`[cron] 起動 - ${Math.round(msToNextMinute / 1000)}秒後に初回実行、以降毎分`);
 
+let inFlight = false;
+
+const tick = async () => {
+  if (inFlight) return;
+  inFlight = true;
+  try {
+    await trigger();
+  } finally {
+    inFlight = false;
+  }
+};
+
 setTimeout(() => {
-  void trigger();
-  setInterval(trigger, 60_000);
+  void tick();
+  setInterval(() => {
+    void tick();
+  }, 60_000);
 }, msToNextMinute);

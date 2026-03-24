@@ -70,7 +70,7 @@ export const PowerChart = () => {
     data: recentData,
     isLoading: recentLoading,
     isError: recentError,
-  } = useRecentPower(periodMinutes, autoRefresh);
+  } = useRecentPower(periodMinutes, autoRefresh && isLive);
   const {
     data: rangeData,
     isLoading: rangeLoading,
@@ -107,9 +107,9 @@ export const PowerChart = () => {
   };
 
   const goForward = () => {
-    if (isLive) return;
+    if (isLive || anchorTime === null) return;
     clearFree();
-    const next = addMinutes(anchorTime!, periodMinutes);
+    const next = addMinutes(anchorTime, periodMinutes);
     setAnchorTime(next >= new Date() ? null : next);
   };
 
@@ -273,10 +273,11 @@ const ChartBody = ({
     return el.getBoundingClientRect().width - 60; // 60px = Y軸幅の近似
   }, [chartWrapperRef]);
 
-  // ホイールズーム → 任意範囲モードへ移行してフェッチ
+  // ホイールズーム → viewDomain を即時更新、300ms 無操作後に freeRange へコミットしてフェッチ
   useEffect(() => {
     const el = chartWrapperRef.current;
     if (!el) return;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const [d0, d1] = currentDomain();
@@ -294,12 +295,21 @@ const ChartBody = ({
         center - newSpan * ratio,
         center + newSpan * (1 - ratio),
       ];
-      // 任意範囲として確定（表示 + フェッチ）
-      setFreeRange(newDomain);
-      setViewDomain(null);
+      // ズーム中は表示のみ更新（フェッチしない）
+      setViewDomain(newDomain);
+      // 操作が止まったらフェッチを伴う任意範囲として確定
+      if (debounceTimer !== null) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        setFreeRange(newDomain);
+        setViewDomain(null);
+        debounceTimer = null;
+      }, 300);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      if (debounceTimer !== null) clearTimeout(debounceTimer);
+    };
   }, [currentDomain, getPlotWidth, chartWrapperRef, setFreeRange, setViewDomain]);
 
   // ドラッグパン（mousemove で viewDomain 更新、mouseup で freeRange へコミット）
