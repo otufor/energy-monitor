@@ -18,7 +18,7 @@ jobs:
         with:
           cache: true
           node-version: 22
-      - run: vp build --filter dashboard
+      - run: vp run dashboard#build
         env:
           VITE_WORKERS_API_URL: ${{ secrets.WORKERS_API_URL }}
       - uses: cloudflare/pages-action@v1
