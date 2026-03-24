@@ -21,10 +21,10 @@ jobs:
         env:
           WORKERS_API_URL: ${{ secrets.WORKERS_API_URL }}
         run: |
+          mkdir -p notebooks/output
           marimo export html \
             notebooks/energy_analysis.py \
-            -o notebooks/output/daily_$(date +%Y-%m-%d).html \
-            --execute
+            -o notebooks/output/daily_$(date +%Y-%m-%d).html
 
       - name: Upload report to R2
         env:
