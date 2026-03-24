@@ -1,0 +1,9 @@
+{
+  "name": "energy-monitor-notebook",
+  "main": "index.js",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": "./wasm",
+    "binding": "ASSETS",
+  },
+}
