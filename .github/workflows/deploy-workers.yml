@@ -6,6 +6,7 @@ on:
     paths:
       - "apps/workers/**"
       - "packages/**"
+  workflow_dispatch:
 
 jobs:
   deploy-workers:

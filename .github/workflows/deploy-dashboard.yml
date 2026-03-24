@@ -6,6 +6,7 @@ on:
     paths:
       - "apps/dashboard/**"
       - "packages/**"
+  workflow_dispatch:
 
 jobs:
   deploy-dashboard:
