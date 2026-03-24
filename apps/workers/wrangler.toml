@@ -1,0 +1,21 @@
+name = "energy-monitor-workers"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[triggers]
+crons = ["* * * * *"] # 毎分: データ収集
+# crons = ["0 0 * * *"]     # 毎日0時: 日次CSV → R2
+
+[[d1_databases]]
+binding = "DB"
+database_name = "energy-db"
+database_id = "YOUR_D1_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "energy-reports"
+
+[vars]
+COST_PER_KWH = "30"
+ALERT_THRESHOLD_WATTS = "3000"

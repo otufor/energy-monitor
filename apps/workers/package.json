@@ -1,0 +1,24 @@
+{
+  "name": "workers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "dev:cron": "node scripts/trigger-cron.mjs",
+    "dev:all": "sh -c 'wrangler dev & sleep 5 && node scripts/trigger-cron.mjs'",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 migrations apply energy-db",
+    "test": "vp test"
+  },
+  "dependencies": {
+    "@energy-monitor/types": "workspace:*",
+    "hono": "^4.7.11"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260317.0",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:",
+    "wrangler": "catalog:"
+  }
+}
