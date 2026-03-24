@@ -45,7 +45,7 @@ def _(JST, api_url, datetime, json, minutes_slider, mo, urllib):
         "localhost",
         "127.0.0.1",
         "energy-monitor-workers.mh076144.workers.dev",
-        "energy-monitor-notebook.workers.dev",
+        "energy-monitor-notebook.mh076144.workers.dev",
     }
 
     def _is_allowed_url(raw: str) -> bool:
