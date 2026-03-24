@@ -35,11 +35,12 @@ jobs:
         run: python scripts/upload_r2.py notebooks/output/daily_$(date +%Y-%m-%d).html
 
       - name: Notify LINE
-        if: secrets.LINE_TOKEN != ''
         env:
           LINE_TOKEN: ${{ secrets.LINE_TOKEN }}
         run: |
-          curl -s -o /dev/null -w "%{http_code}" \
-            -X POST https://notify-api.line.me/api/notify \
-            -H "Authorization: Bearer $LINE_TOKEN" \
-            --data-urlencode "message=📊 日次レポートが生成されました ($(date +%Y-%m-%d))"
+          if [ -n "$LINE_TOKEN" ]; then
+            curl -s -o /dev/null -w "%{http_code}" \
+              -X POST https://notify-api.line.me/api/notify \
+              -H "Authorization: Bearer $LINE_TOKEN" \
+              --data-urlencode "message=[energy-monitor] daily report generated ($(date +%Y-%m-%d))"
+          fi
