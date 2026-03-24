@@ -50,8 +50,12 @@ app.use("/api/*", async (c, next) => {
 
 app.route("/api", powerRouter);
 
-// Dev only: manual trigger for scheduled collector
+// Dev only: manual trigger for scheduled collector (API キー認証必須)
 app.get("/dev/collect", async (c) => {
+  const key = c.req.header("X-Api-Key");
+  if (!c.env.API_KEY || key !== c.env.API_KEY) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
   try {
     await collector(c.env);
     return c.json({ ok: true });

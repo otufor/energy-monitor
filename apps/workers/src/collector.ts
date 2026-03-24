@@ -10,6 +10,7 @@ const EPC_COEFFICIENT = 0xd3; // 211: 係数
 const EPC_UNIT = 0xe1; // 225: 積算電力量単位
 const EPC_DIGITS = 0xd7; // 215: 有効桁数（最大値 = 10^digits - 1）
 
+/** Nature Remo Cloud API から家電一覧を取得する */
 async function fetchNatureRemo(token: string) {
   const res = await fetch("https://api.nature.global/1/appliances", {
     headers: { Authorization: `Bearer ${token}` },
@@ -18,6 +19,10 @@ async function fetchNatureRemo(token: string) {
   return res.json<NatureRemoAppliance[]>();
 }
 
+/**
+ * 家電一覧からスマートメーターの計測値を抽出する。
+ * スマートメーターが見つからない場合は null を返す。
+ */
 export function extractSmartMeterData(appliances: NatureRemoAppliance[]) {
   const sm = appliances.find((a) => a.type === "EL_SMART_METER");
   if (!sm?.smart_meter) return null;
@@ -28,13 +33,9 @@ export function extractSmartMeterData(appliances: NatureRemoAppliance[]) {
   const findProp = (epc: number) => props.find((p) => p.epc === epc);
   const getInt = (epc: number, fallback: number) =>
     findProp(epc) ? parseInt(findProp(epc)!.val, 10) : fallback;
-  const getFloat = (epc: number) => {
-    const prop = findProp(epc);
-    return prop ? parseInt(prop.val, 10) : 0;
-  };
 
-  const watts = getFloat(EPC_WATTS); // hex → W
-  const ampere = getFloat(EPC_AMPERE) / 10; // hex → A×10 → A
+  const watts = getInt(EPC_WATTS, 0); // W
+  const ampere = getInt(EPC_AMPERE, 0) / 10; // A×10 → A
   const cum_raw = getInt(EPC_CUM_FORWARD, 0);
   const coefficient = getInt(EPC_COEFFICIENT, 1); // 未設定時は 1
   const unitCode = getInt(EPC_UNIT, 0x01); // 未設定時は 0x01 (0.1 kWh)
@@ -49,8 +50,12 @@ export function extractSmartMeterData(appliances: NatureRemoAppliance[]) {
   return { watts, ampere, cum_raw, cum_kwh, maxCount };
 }
 
+/**
+ * LINE Notify でメッセージを送信する。
+ * HTTP エラー時は Error をスローする。
+ */
 async function notifyLine(token: string, message: string) {
-  await fetch("https://notify-api.line.me/api/notify", {
+  const res = await fetch("https://notify-api.line.me/api/notify", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -58,8 +63,13 @@ async function notifyLine(token: string, message: string) {
     },
     body: `message=${encodeURIComponent(message)}`,
   });
+  if (!res.ok) throw new Error(`LINE Notify error: ${res.status}`);
 }
 
+/**
+ * Nature Remo からデータを収集して D1 に記録するメインコレクター。
+ * 積算電力量のオーバーフロー検知と閾値超過アラートも行う。
+ */
 export async function collector(env: Env) {
   const appliances = await fetchNatureRemo(env.NATURE_TOKEN);
   const data = extractSmartMeterData(appliances);

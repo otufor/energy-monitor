@@ -1,3 +1,1 @@
-export function fn() {
-  return "Hello, tsdown!";
-}
+// utilities shared across apps (currently empty)
