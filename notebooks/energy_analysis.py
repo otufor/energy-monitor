@@ -23,7 +23,7 @@ def _(mo):
 @app.cell
 def _(mo):
     api_url = mo.ui.text(
-        value="http://localhost:8787",
+        value="https://energy-monitor-workers.mh076144.workers.dev",
         label="Workers API URL",
         full_width=True,
     )
