@@ -273,14 +273,23 @@ const ChartBody = ({
     return el.getBoundingClientRect().width - 60; // 60px = Y軸幅の近似
   }, [chartWrapperRef]);
 
+  // currentDomain は viewDomain 変化ごとに再生成されるため ref で最新値を保持
+  const currentDomainRef = useRef(currentDomain);
+  useEffect(() => {
+    currentDomainRef.current = currentDomain;
+  }, [currentDomain]);
+
+  // デバウンスタイマーを ref で保持（effect の cleanup で誤キャンセルされないようにする）
+  const wheelCommitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ホイールズーム → viewDomain を即時更新、300ms 無操作後に freeRange へコミットしてフェッチ
+  // effect の deps から currentDomain を除外し、listener を viewDomain 変化で再登録しない
   useEffect(() => {
     const el = chartWrapperRef.current;
     if (!el) return;
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const [d0, d1] = currentDomain();
+      const [d0, d1] = currentDomainRef.current();
       const span = d1 - d0;
       const factor = e.deltaY > 0 ? 1.25 : 0.8;
 
@@ -298,19 +307,19 @@ const ChartBody = ({
       // ズーム中は表示のみ更新（フェッチしない）
       setViewDomain(newDomain);
       // 操作が止まったらフェッチを伴う任意範囲として確定
-      if (debounceTimer !== null) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
+      if (wheelCommitTimerRef.current !== null) clearTimeout(wheelCommitTimerRef.current);
+      wheelCommitTimerRef.current = setTimeout(() => {
         setFreeRange(newDomain);
         setViewDomain(null);
-        debounceTimer = null;
+        wheelCommitTimerRef.current = null;
       }, 300);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       el.removeEventListener("wheel", onWheel);
-      if (debounceTimer !== null) clearTimeout(debounceTimer);
+      if (wheelCommitTimerRef.current !== null) clearTimeout(wheelCommitTimerRef.current);
     };
-  }, [currentDomain, getPlotWidth, chartWrapperRef, setFreeRange, setViewDomain]);
+  }, [getPlotWidth, chartWrapperRef, setFreeRange, setViewDomain]);
 
   // ドラッグパン（mousemove で viewDomain 更新、mouseup で freeRange へコミット）
   useEffect(() => {
