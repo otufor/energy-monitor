@@ -10,11 +10,33 @@ export interface Env {
   LINE_TOKEN: string;
   COST_PER_KWH: string;
   ALERT_THRESHOLD_WATTS: string;
+  API_KEY: string;
+  ALLOWED_ORIGINS: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
 
-app.use("*", cors());
+// CORS: 環境変数 ALLOWED_ORIGINS (カンマ区切り) で制限
+app.use("*", async (c, next) => {
+  const allowed = (c.env.ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+  return cors({
+    origin: allowed.length > 0 ? allowed : [],
+    allowMethods: ["GET", "POST"],
+    allowHeaders: ["Content-Type", "X-Api-Key"],
+  })(c, next);
+});
+
+// API キー認証ミドルウェア
+app.use("/api/*", async (c, next) => {
+  const key = c.req.header("X-Api-Key");
+  if (!c.env.API_KEY || key !== c.env.API_KEY) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  return next();
+});
 
 app.route("/api", powerRouter);
 
@@ -24,7 +46,7 @@ app.get("/dev/collect", async (c) => {
     await collector(c.env);
     return c.json({ ok: true });
   } catch (e) {
-    const msg = e instanceof Error ? `${e.message}\n${e.stack}` : String(e);
+    const msg = e instanceof Error ? e.message : String(e);
     return c.json({ ok: false, error: msg }, 500);
   }
 });

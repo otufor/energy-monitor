@@ -7,6 +7,9 @@ export const powerRouter = new Hono<{ Bindings: Env }>();
 // 直近 N 分の電力ログ
 powerRouter.get("/power/recent", async (c) => {
   const minutes = parseInt(c.req.query("minutes") ?? "60");
+  if (isNaN(minutes) || minutes < 1 || minutes > 10080) {
+    return c.json({ error: "minutes must be between 1 and 10080" }, 400);
+  }
   const { results } = await c.env.DB.prepare(
     `SELECT ts, watts, ampere, cum_raw, cum_kwh FROM power_log
      WHERE ts >= datetime('now', ? || ' minutes')
@@ -23,6 +26,11 @@ powerRouter.get("/power/range", async (c) => {
   const from = c.req.query("from");
   const to = c.req.query("to");
   if (!from || !to) return c.json({ error: "from and to are required" }, 400);
+
+  const isValidISO = (s: string) => !isNaN(Date.parse(s));
+  if (!isValidISO(from) || !isValidISO(to)) {
+    return c.json({ error: "from and to must be valid ISO 8601 date strings" }, 400);
+  }
 
   const toDb = (iso: string) =>
     iso
@@ -44,6 +52,9 @@ powerRouter.get("/power/range", async (c) => {
 // 日次サマリー
 powerRouter.get("/summary/:date", async (c) => {
   const date = c.req.param("date");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return c.json({ error: "date must be in YYYY-MM-DD format" }, 400);
+  }
   const row = await c.env.DB.prepare(
     `SELECT
        ? AS date,
@@ -67,6 +78,9 @@ powerRouter.get("/summary/:date", async (c) => {
 // 日次 CSV → R2 へ保存
 powerRouter.post("/export/daily", async (c) => {
   const { date } = await c.req.json<{ date: string }>();
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return c.json({ error: "date must be in YYYY-MM-DD format" }, 400);
+  }
   const { results } = await c.env.DB.prepare(
     `SELECT ts, watts, ampere, cum_kwh FROM power_log
      WHERE date(ts, '+9 hours') = ? ORDER BY ts ASC`,

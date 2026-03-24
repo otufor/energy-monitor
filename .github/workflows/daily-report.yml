@@ -9,10 +9,10 @@ jobs:
   report:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081 # v5
 
       - name: Install marimo
         run: uv tool install marimo --with altair --with pandas --with requests
@@ -39,6 +39,7 @@ jobs:
         env:
           LINE_TOKEN: ${{ secrets.LINE_TOKEN }}
         run: |
-          curl -X POST https://notify-api.line.me/api/notify \
+          curl -s -o /dev/null -w "%{http_code}" \
+            -X POST https://notify-api.line.me/api/notify \
             -H "Authorization: Bearer $LINE_TOKEN" \
-            -d "message=📊 日次レポートが生成されました ($(date +%Y-%m-%d))"
+            --data-urlencode "message=📊 日次レポートが生成されました ($(date +%Y-%m-%d))"

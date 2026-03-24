@@ -10,7 +10,7 @@ crons = ["* * * * *"] # 毎分: データ収集
 [[d1_databases]]
 binding = "DB"
 database_name = "energy-db"
-database_id = "YOUR_D1_DATABASE_ID"
+database_id = "cd726043-02c4-4cae-bc1b-726c382f2442"
 
 [[r2_buckets]]
 binding = "R2"
@@ -19,3 +19,7 @@ bucket_name = "energy-reports"
 [vars]
 COST_PER_KWH = "30"
 ALERT_THRESHOLD_WATTS = "3000"
+# ALLOWED_ORIGINS: カンマ区切りで許可するオリジンを設定
+# 例: "https://energy-monitor.pages.dev,http://localhost:5173"
+ALLOWED_ORIGINS = ""
+# API_KEY はシークレット: wrangler secret put API_KEY
