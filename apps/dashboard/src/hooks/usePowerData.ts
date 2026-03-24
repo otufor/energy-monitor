@@ -3,11 +3,11 @@ import type { PowerLog, DailySummary } from "../types";
 
 const API = import.meta.env.VITE_WORKERS_API_URL ?? "";
 
-export const useRecentPower = (minutes = 60) =>
+export const useRecentPower = (minutes = 60, autoRefresh = false) =>
   useQuery<PowerLog[]>({
     queryKey: ["power", "recent", minutes],
     queryFn: () => fetch(`${API}/api/power/recent?minutes=${minutes}`).then((r) => r.json()),
-    refetchInterval: 60_000,
+    refetchInterval: autoRefresh ? 60_000 : false,
   });
 
 export const usePowerRange = (from: string, to: string, enabled = true) =>

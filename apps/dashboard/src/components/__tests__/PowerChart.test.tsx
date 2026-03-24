@@ -23,7 +23,10 @@ vi.mock("recharts", () => ({
   Tooltip: () => null,
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   CartesianGrid: () => null,
-  Customized: () => null,
+  // Recharts 3.x hooks（チャートコンテキスト外では undefined を返す）
+  useYAxisScale: () => undefined,
+  useYAxisInverseScale: () => undefined,
+  usePlotArea: () => undefined,
 }));
 
 import { useRecentPower, usePowerRange } from "../../hooks/usePowerData";
@@ -74,6 +77,33 @@ describe("PowerChart", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "3時間" }));
     expect(screen.getByText("瞬時電力（直近3時間）")).toBeInTheDocument();
+  });
+
+  it("自動更新チェックボックスはデフォルトで OFF である", () => {
+    vi.mocked(useRecentPower).mockReturnValue({
+      data: mockPowerLogs,
+      isLoading: false,
+    } as ReturnType<typeof useRecentPower>);
+
+    render(<PowerChart />, { wrapper });
+
+    const checkbox = screen.getByRole("checkbox", { name: "自動更新" });
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it("自動更新チェックボックスを ON にすると useRecentPower に autoRefresh=true が渡る", async () => {
+    vi.mocked(useRecentPower).mockReturnValue({
+      data: mockPowerLogs,
+      isLoading: false,
+    } as ReturnType<typeof useRecentPower>);
+
+    render(<PowerChart />, { wrapper });
+
+    const checkbox = screen.getByRole("checkbox", { name: "自動更新" });
+    await userEvent.click(checkbox);
+
+    expect(checkbox).toBeChecked();
+    expect(vi.mocked(useRecentPower)).toHaveBeenCalledWith(expect.any(Number), true);
   });
 
   it("「← 前」ボタンで過去へ移動し「現在」ボタンが有効になる", async () => {
