@@ -32,6 +32,17 @@ def _(mo):
 
 @app.cell
 def _(mo):
+    api_key = mo.ui.text(
+        value="",
+        label="API Key (X-Api-Key)",
+        full_width=True,
+        kind="password",
+    )
+    api_key
+
+
+@app.cell
+def _(mo):
     minutes_slider = mo.ui.slider(
         start=30, stop=1440, step=30, value=60,
         label="Recent data (minutes)",
@@ -40,7 +51,7 @@ def _(mo):
 
 
 @app.cell
-def _(JST, api_url, datetime, json, minutes_slider, mo, urllib):
+def _(JST, api_key, api_url, datetime, json, minutes_slider, mo, urllib):
     _ALLOWED_HOSTS = {
         "localhost",
         "127.0.0.1",
@@ -62,7 +73,8 @@ def _(JST, api_url, datetime, json, minutes_slider, mo, urllib):
             return {"error": f"Blocked: '{base}' is not an allowed API host"}
         url = base + path
         try:
-            with urllib.request.urlopen(url, timeout=10) as resp:
+            req = urllib.request.Request(url, headers={"X-Api-Key": api_key.value})
+            with urllib.request.urlopen(req, timeout=10) as resp:
                 return json.loads(resp.read())
         except Exception as e:
             return {"error": str(e)}
