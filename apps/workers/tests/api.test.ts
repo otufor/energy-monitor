@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
 import { Hono } from "hono";
 import { powerRouter } from "../src/api";
-import type { Env } from "../src/index";
+import { createApp, type Env } from "../src/index";
 
 // D1Database のモック
 const mockD1 = {
@@ -23,6 +23,12 @@ const makeEnv = (overrides?: Partial<Env>): Env => ({
 const makeApp = (env: Env) => {
   const app = new Hono<{ Bindings: Env }>();
   app.route("/api", powerRouter);
+  return (path: string, init?: RequestInit) =>
+    app.fetch(new Request(`http://localhost${path}`, init), env);
+};
+
+const makeWorkerApp = (env: Env) => {
+  const app = createApp();
   return (path: string, init?: RequestInit) =>
     app.fetch(new Request(`http://localhost${path}`, init), env);
 };
@@ -218,5 +224,26 @@ describe("GET /api/summary/:date", () => {
     const res = await makeApp(makeEnv({ COST_PER_KWH: "40" }))("/api/summary/2025-01-01");
     const json = (await res.json()) as Record<string, number>;
     expect(json.cost_yen).toBe(400); // 10 * 40
+  });
+});
+
+describe("CORS preflight", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("許可済み origin からの OPTIONS を認証前に通す", async () => {
+    const res = await makeWorkerApp(makeEnv({ API_KEY: "secret" }))("/api/summary/2025-01-01", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "https://energy-monitor-notebook.mh076144.workers.dev",
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "X-Api-Key",
+      },
+    });
+
+    expect(res.status).toBe(204);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
+      "https://energy-monitor-notebook.mh076144.workers.dev",
+    );
+    expect(res.headers.get("Access-Control-Allow-Headers")).toContain("X-Api-Key");
   });
 });
