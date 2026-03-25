@@ -1,0 +1,5 @@
+language: "ja-JP"
+reviews:
+  high_level_summary: true
+  auto_review:
+    enabled: true
