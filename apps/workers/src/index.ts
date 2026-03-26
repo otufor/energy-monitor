@@ -21,6 +21,12 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "https://energy-monitor-notebook.mh076144.workers.dev",
 ];
 
+const isPagesPreviewOrigin = (origin: string) =>
+  /^https:\/\/[a-z0-9-]+\.pages\.dev$/i.test(origin);
+
+const isAllowedOrigin = (origin: string, allowed: string[]) =>
+  allowed.includes(origin) || isPagesPreviewOrigin(origin);
+
 export const createApp = () => {
   const app = new Hono<{ Bindings: Env }>();
 
@@ -34,7 +40,7 @@ export const createApp = () => {
     c.header("Referrer-Policy", "no-referrer");
   });
 
-  // CORS: 環境変数 ALLOWED_ORIGINS (カンマ区切り) で制限。未設定時は既知の UI だけ許可する。
+  // CORS: 環境変数 ALLOWED_ORIGINS (カンマ区切り) で制限。未設定時は既知の UI と Pages preview を許可する。
   app.use("*", async (c, next) => {
     const configured = (c.env.ALLOWED_ORIGINS ?? "")
       .split(",")
@@ -42,15 +48,22 @@ export const createApp = () => {
       .filter(Boolean);
     const allowed = configured.length > 0 ? configured : DEFAULT_ALLOWED_ORIGINS;
     return cors({
-      origin: allowed,
+      origin: (origin) => {
+        if (!origin) return "";
+        return isAllowedOrigin(origin, allowed) ? origin : "";
+      },
       allowMethods: ["GET", "POST", "OPTIONS"],
       allowHeaders: ["Content-Type", "X-Api-Key"],
     })(c, next);
   });
 
-  // API キー認証ミドルウェア
+  // 読み取り API は公開し、書き込み系だけ API キーで保護する。
   app.use("/api/*", async (c, next) => {
     if (c.req.method === "OPTIONS") {
+      return next();
+    }
+
+    if (c.req.method === "GET") {
       return next();
     }
 

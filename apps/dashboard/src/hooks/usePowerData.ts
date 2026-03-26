@@ -6,7 +6,7 @@ const API_KEY = import.meta.env.VITE_API_KEY ?? "";
 
 /** X-Api-Key ヘッダーを付与してフェッチし、非 2xx の場合は Error をスローする */
 const apiFetch = (url: string) =>
-  fetch(url, { headers: { "X-Api-Key": API_KEY } }).then((r) => {
+  fetch(url, { headers: API_KEY ? { "X-Api-Key": API_KEY } : undefined }).then((r) => {
     if (!r.ok) throw new Error(`API error: ${r.status}`);
     return r.json();
   });
