@@ -1,5 +1,8 @@
 name: Deploy Notebook
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches: [main]
@@ -11,10 +14,12 @@ jobs:
   deploy-notebook:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@v6
 
       - name: Install uv
-        uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081 # v5
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: false
 
       - name: Install marimo
         run: uv tool install marimo --with altair
