@@ -22,8 +22,7 @@ jobs:
         env:
           VITE_WORKERS_API_URL: ${{ secrets.WORKERS_API_URL }}
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: pages deploy apps/dashboard/dist --project-name=energy-monitor
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: vp exec wrangler pages deploy apps/dashboard/dist --project-name=energy-monitor
