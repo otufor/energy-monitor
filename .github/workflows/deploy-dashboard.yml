@@ -12,7 +12,7 @@ jobs:
   deploy-dashboard:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
         with:
@@ -21,9 +21,9 @@ jobs:
       - run: vp run dashboard#build
         env:
           VITE_WORKERS_API_URL: ${{ secrets.WORKERS_API_URL }}
-      - uses: cloudflare/pages-action@v1
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          projectName: energy-monitor
-          directory: apps/dashboard/dist
+          command: pages deploy apps/dashboard/dist --project-name=energy-monitor
