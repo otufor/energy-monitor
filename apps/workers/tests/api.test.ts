@@ -246,4 +246,51 @@ describe("CORS preflight", () => {
     );
     expect(res.headers.get("Access-Control-Allow-Headers")).toContain("X-Api-Key");
   });
+
+  it("Cloudflare Pages preview origin からの OPTIONS を許可する", async () => {
+    const res = await makeWorkerApp(makeEnv({ API_KEY: "secret" }))("/api/summary/2025-01-01", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "https://energy-monitor-8sa.pages.dev",
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "X-Api-Key",
+      },
+    });
+
+    expect(res.status).toBe(204);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
+      "https://energy-monitor-8sa.pages.dev",
+    );
+  });
+});
+
+describe("API auth", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("GET API は API キーなしで利用できる", async () => {
+    mockD1.prepare.mockReturnValue({
+      bind: vi.fn().mockReturnValue({
+        first: vi.fn().mockResolvedValue({
+          date: "2025-01-01",
+          total_kwh: 10,
+          peak_watts: 1000,
+          peak_time: "2025-01-01 12:00:00",
+          avg_watts: 400,
+        }),
+      }),
+    });
+
+    const res = await makeWorkerApp(makeEnv({ API_KEY: "secret" }))("/api/summary/2025-01-01");
+    expect(res.status).toBe(200);
+  });
+
+  it("POST API は API キーなしだと 401 を返す", async () => {
+    const res = await makeWorkerApp(makeEnv({ API_KEY: "secret" }))("/api/export/daily", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: "2025-01-01" }),
+    });
+
+    expect(res.status).toBe(401);
+  });
 });
