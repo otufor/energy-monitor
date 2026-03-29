@@ -1,1 +1,1 @@
-// utilities shared across apps (currently empty)
+export const fn = () => "Hello, tsdown!";

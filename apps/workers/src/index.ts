@@ -21,8 +21,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "https://energy-monitor-notebook.mh076144.workers.dev",
 ];
 
-const isPagesPreviewOrigin = (origin: string) =>
-  /^https:\/\/[a-z0-9-]+\.pages\.dev$/i.test(origin);
+const isPagesPreviewOrigin = (origin: string) => /^https:\/\/[a-z0-9-]+\.pages\.dev$/i.test(origin);
 
 const isAllowedOrigin = (origin: string, allowed: string[]) =>
   allowed.includes(origin) || isPagesPreviewOrigin(origin);

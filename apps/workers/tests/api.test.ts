@@ -294,4 +294,3 @@ describe("API auth", () => {
     expect(res.status).toBe(401);
   });
 });
-
