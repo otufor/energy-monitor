@@ -30,3 +30,5 @@ notebooks/output/
 *.sw?
 
 .playwright-cli/
+.venv/
+__pycache__/
