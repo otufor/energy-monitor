@@ -1,3 +1,13 @@
 node_modules/
 .wrangler/
 apps/workers/.wrangler/
+.agents/
+.claude/
+.playwright/
+.playwright-cli/
+.venv/
+__pycache__/
+*.log
+*.tmp
+*.cache
+*.bak

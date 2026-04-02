@@ -22,6 +22,3 @@ ALERT_THRESHOLD_WATTS = "3000"
 # ALLOWED_ORIGINS: カンマ区切りで許可するオリジンを設定
 # 例: "https://energy-monitor.pages.dev,http://localhost:5173"
 ALLOWED_ORIGINS = ""
-# API_KEY はシークレット: wrangler secret put API_KEY
-# ローカル dev 用のデフォルト値（本番では必ずシークレットを設定すること）
-API_KEY = "dev"

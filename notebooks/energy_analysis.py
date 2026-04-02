@@ -16,8 +16,10 @@ app = marimo.App(width="medium")
 @app.cell
 async def _():
     import json
+    import os
     import urllib.request
     from datetime import datetime, timedelta, timezone
+    from pathlib import Path
 
     import marimo as mo
 
@@ -29,8 +31,34 @@ async def _():
         await micropip.install("altair")
         import altair as alt
 
+    def load_notebook_env():
+        env_path = Path(__file__).with_name(".env")
+        loaded = {}
+
+        if not env_path.exists():
+            return loaded
+
+        for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            loaded[key.strip()] = value.strip()
+
+        return loaded
+
+    notebook_env = load_notebook_env()
+    default_api_url = os.environ.get(
+        "MARIMO_WORKERS_API_URL",
+        notebook_env.get("MARIMO_WORKERS_API_URL", "http://localhost:8787"),
+    )
+    default_api_key = os.environ.get(
+        "MARIMO_API_KEY",
+        notebook_env.get("MARIMO_API_KEY", ""),
+    )
+
     jst = timezone(timedelta(hours=9))
-    return alt, datetime, json, jst, mo, urllib
+    return alt, datetime, default_api_key, default_api_url, json, jst, mo, os, Path, urllib
 
 
 @app.cell
@@ -44,9 +72,9 @@ def _(mo):
 
 
 @app.cell
-def _(mo):
+def _(default_api_url, mo):
     api_url = mo.ui.text(
-        value="https://energy-monitor-workers.mh076144.workers.dev",
+        value=default_api_url,
         label="Workers API URL",
         full_width=True,
     )
@@ -55,9 +83,9 @@ def _(mo):
 
 
 @app.cell
-def _(mo):
+def _(default_api_key, mo):
     api_key = mo.ui.text(
-        value="",
+        value=default_api_key,
         label="API Key (X-Api-Key)",
         full_width=True,
         kind="password",
