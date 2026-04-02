@@ -89,13 +89,33 @@ energy-monitor/
 vp install
 ```
 
-### 2. ローカル開発用シークレット設定
+### 2. ローカル開発用の環境変数とシークレット設定
 
 ```bash
-cat > apps/workers/.dev.vars << EOF
+cp apps/workers/.dev.vars.example apps/workers/.dev.vars
+cp apps/dashboard/.env.example apps/dashboard/.env.local
+cp notebooks/.env.example notebooks/.env
+```
+
+`apps/workers/.dev.vars` には秘匿情報を設定する:
+
+```bash
 NATURE_TOKEN=<Nature Remo アクセストークン>
 LINE_TOKEN=<LINE Notify トークン>
-EOF
+API_KEY=<ローカル開発用 API キー>
+```
+
+`apps/dashboard/.env.local` には公開してよい設定だけを置く:
+
+```bash
+VITE_WORKERS_API_URL=http://localhost:8787
+```
+
+`notebooks/.env` には marimo notebook 用のローカル設定を置く:
+
+```bash
+MARIMO_WORKERS_API_URL=http://localhost:8787
+MARIMO_API_KEY=<必要な場合だけ設定>
 ```
 
 ### 3. D1 ローカル DB 初期化
@@ -135,6 +155,7 @@ curl http://localhost:8787/dev/collect
 # D1 / R2 作成 → wrangler.toml に database_id を記入後:
 wrangler secret put NATURE_TOKEN
 wrangler secret put LINE_TOKEN
+wrangler secret put API_KEY
 
 # Workers デプロイ
 vp run workers#deploy
@@ -200,10 +221,15 @@ vp run test -r
 
 ## 環境変数
 
-| 名前                    | 設定先             | 説明                                         |
-| ----------------------- | ------------------ | -------------------------------------------- |
-| `NATURE_TOKEN`          | wrangler secret    | Nature Remo API アクセストークン（必須）     |
-| `LINE_TOKEN`            | wrangler secret    | LINE Notify トークン（空の場合は通知しない） |
-| `COST_PER_KWH`          | wrangler.toml vars | 電気代単価（円/kWh）。デフォルト `30`        |
-| `ALERT_THRESHOLD_WATTS` | wrangler.toml vars | アラート閾値（W）。デフォルト `3000`         |
-| `VITE_WORKERS_API_URL`  | .env.local         | Dashboard が参照する Workers URL             |
+| 名前                     | 設定先             | 説明                                         |
+| ------------------------ | ------------------ | -------------------------------------------- |
+| `NATURE_TOKEN`           | wrangler secret    | Nature Remo API アクセストークン（必須）     |
+| `LINE_TOKEN`             | wrangler secret    | LINE Notify トークン（空の場合は通知しない） |
+| `API_KEY`                | wrangler secret    | 書き込み系 API と `/dev/collect` の認証キー  |
+| `COST_PER_KWH`           | wrangler.toml vars | 電気代単価（円/kWh）。デフォルト `30`        |
+| `ALERT_THRESHOLD_WATTS`  | wrangler.toml vars | アラート閾値（W）。デフォルト `3000`         |
+| `VITE_WORKERS_API_URL`   | .env.local         | Dashboard が参照する Workers URL             |
+| `MARIMO_WORKERS_API_URL` | notebooks/.env     | marimo notebook が参照する Workers URL       |
+| `MARIMO_API_KEY`         | notebooks/.env     | marimo notebook が使う API キー              |
+
+センシティブな値は `apps/workers/.dev.vars`、Cloudflare Workers Secrets、GitHub Secrets に保存し、`.env` には公開して問題ない値だけを置く。

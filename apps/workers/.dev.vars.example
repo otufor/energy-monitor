@@ -1,0 +1,4 @@
+# ローカル開発用。実ファイルは apps/workers/.dev.vars として作成してください。
+NATURE_TOKEN=<your-nature-remo-token>
+LINE_TOKEN=<your-line-token>
+API_KEY=<local-dev-api-key>

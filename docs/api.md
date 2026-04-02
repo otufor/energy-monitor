@@ -2,7 +2,7 @@
 
 ベース URL: `https://energy-monitor-workers.<account>.workers.dev`
 
-認証は現在未実装。本番環境では `X-API-Key` ヘッダー等で保護すること。
+`GET` 系 API は公開、`POST` 系 API と `/dev/collect` は `X-Api-Key` ヘッダーで保護する。
 
 ---
 
@@ -130,6 +130,18 @@ ts,watts,ampere,cum_raw,cum_kwh
 
 ---
 
+### 認証
+
+リクエストヘッダー:
+
+```http
+X-Api-Key: <API_KEY>
+```
+
+`API_KEY` は Cloudflare Workers Secrets に登録し、ローカル開発時は `apps/workers/.dev.vars` に保存する。
+
+---
+
 ## Cron トリガー（内部）
 
 REST API ではなく Workers の Scheduled Handler として動作する。
@@ -144,6 +156,7 @@ REST API ではなく Workers の Scheduled Handler として動作する。
 | ----------------------- | ------ | -------------------------------------------- |
 | `NATURE_TOKEN`          | Secret | Nature Remo API アクセストークン             |
 | `LINE_TOKEN`            | Secret | LINE Notify トークン                         |
+| `API_KEY`               | Secret | `POST` 系 API と `/dev/collect` の認証キー   |
 | `COST_PER_KWH`          | Var    | 1 kWh あたりの電気代（円）。デフォルト `30`  |
 | `ALERT_THRESHOLD_WATTS` | Var    | 高電力アラートの閾値（W）。デフォルト `3000` |
 
@@ -152,6 +165,7 @@ Secrets の登録:
 ```bash
 wrangler secret put NATURE_TOKEN
 wrangler secret put LINE_TOKEN
+wrangler secret put API_KEY
 ```
 
 ---
