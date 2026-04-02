@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Architecture Explorer Template</title>
+    <style>
+      :root {
+        --bg-top: #fff8ef;
+        --bg-bottom: #efe4d1;
+        --panel: rgba(255, 251, 244, 0.9);
+        --panel-strong: #fffdf9;
+        --line: rgba(140, 92, 39, 0.18);
+        --text: #1f2937;
+        --muted: #6b7280;
+        --accent: #b45309;
+        --accent-2: #0f766e;
+        --accent-3: #2563eb;
+        --shadow: 0 24px 70px rgba(79, 52, 20, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--text);
+        font-family: "IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(180, 83, 9, 0.14), transparent 28%),
+          radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 24%),
+          linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+      }
+
+      .page {
+        max-width: 1360px;
+        margin: 0 auto;
+        padding: 28px 20px 48px;
+      }
+
+      .hero,
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+      }
+
+      .hero {
+        padding: 28px;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 0;
+        font-family: "Iowan Old Style", "Palatino Linotype", serif;
+        font-size: clamp(2rem, 5vw, 3.8rem);
+        line-height: 1.04;
+      }
+
+      .hero p {
+        margin: 14px 0 0;
+        max-width: 920px;
+        color: #4b5563;
+        line-height: 1.8;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .hero-card {
+        background: rgba(255, 255, 255, 0.66);
+        border: 1px solid rgba(140, 92, 39, 0.14);
+        border-radius: 18px;
+        padding: 14px 16px;
+      }
+
+      .hero-card strong {
+        display: block;
+        margin-bottom: 6px;
+        color: #7c5c33;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.92fr);
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .left {
+        padding: 18px;
+      }
+
+      .right {
+        padding: 20px;
+        position: sticky;
+        top: 18px;
+        height: fit-content;
+      }
+
+      .toolbar,
+      .modes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .modes {
+        margin-bottom: 10px;
+      }
+
+      .toolbar {
+        margin-bottom: 18px;
+      }
+
+      .tab {
+        border: 1px solid rgba(123, 92, 51, 0.18);
+        background: rgba(255, 255, 255, 0.75);
+        color: #5b4a36;
+        padding: 11px 15px;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+
+      .tab.active {
+        color: white;
+        background: var(--accent);
+      }
+
+      .mode-toggle.active[data-mode="proposal"] {
+        background: var(--accent-2);
+      }
+
+      .diagram {
+        display: none;
+      }
+
+      .diagram.active {
+        display: block;
+      }
+
+      .diagram-header {
+        margin-bottom: 18px;
+      }
+
+      .diagram-header h2 {
+        margin: 0;
+        font-size: 1.45rem;
+      }
+
+      .diagram-header p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .node {
+        position: relative;
+        background: var(--panel-strong);
+        border: 1px solid rgba(123, 92, 51, 0.14);
+        border-radius: 22px;
+        padding: 18px;
+        cursor: pointer;
+      }
+
+      .node.active {
+        border-color: currentColor;
+        box-shadow: 0 16px 34px rgba(87, 53, 21, 0.14);
+      }
+
+      .node::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: -16px;
+        width: 2px;
+        height: 16px;
+        background: linear-gradient(180deg, rgba(124, 92, 51, 0.55), transparent);
+        transform: translateX(-50%);
+      }
+
+      .node:last-child::after {
+        display: none;
+      }
+
+      .node h3 {
+        margin: 0;
+        font-size: 1.02rem;
+      }
+
+      .node p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .meta-card {
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(123, 92, 51, 0.14);
+        border-radius: 20px;
+        padding: 16px;
+        margin-bottom: 14px;
+      }
+
+      .meta-card h3,
+      .meta-card h2 {
+        margin: 0 0 10px;
+      }
+
+      .meta-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .summary,
+      .file-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .summary-row,
+      .file-item {
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: rgba(255, 249, 240, 0.92);
+        border: 1px solid rgba(180, 120, 60, 0.14);
+      }
+
+      .file-item {
+        font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+        font-size: 0.84rem;
+        background: white;
+      }
+
+      .comparison {
+        display: none;
+      }
+
+      .comparison.active {
+        display: block;
+      }
+
+      .comparison-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .comparison-col {
+        border: 1px solid rgba(123, 92, 51, 0.14);
+        border-radius: 18px;
+        padding: 14px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .comparison-col h4 {
+        margin: 0 0 8px;
+      }
+
+      @media (max-width: 980px) {
+        .layout,
+        .comparison-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .right {
+          position: static;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <p class="eyebrow">Architecture Explorer Template</p>
+        <h1 data-slot="title">プロジェクト名をここに入れる</h1>
+        <p data-slot="intro">
+          このテンプレートは、コードベースの構造を複数の設計観点で説明し、
+          さらに現状分析と改善提案を切り替えながら見せるための土台です。
+        </p>
+        <div class="hero-grid">
+          <div class="hero-card">
+            <strong>対象</strong><span data-slot="scope-1">主要ユースケース</span>
+          </div>
+          <div class="hero-card">
+            <strong>観点</strong><span data-slot="scope-2">MVC / Layered / Clean</span>
+          </div>
+          <div class="hero-card">
+            <strong>重点</strong><span data-slot="scope-3">責務の混ざり方</span>
+          </div>
+          <div class="hero-card">
+            <strong>成果物</strong><span data-slot="scope-4">理解と提案の両立</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="layout">
+        <div class="panel left">
+          <div class="modes" aria-label="modes">
+            <button class="tab mode-toggle active" data-mode="current-state">現状分析モード</button>
+            <button class="tab mode-toggle" data-mode="proposal">改善提案モード</button>
+          </div>
+
+          <div class="toolbar" aria-label="views">
+            <button class="tab view-toggle active" data-view="mvc">MVC</button>
+            <button class="tab view-toggle" data-view="layered">レイヤード</button>
+            <button class="tab view-toggle" data-view="clean">クリーン</button>
+          </div>
+
+          <section class="diagram active" data-diagram="mvc">
+            <div class="diagram-header">
+              <h2 data-slot="mvc-title">MVC として見る</h2>
+              <p data-slot="mvc-intro">ここに MVC 観点の説明を入れる。</p>
+            </div>
+            <div class="stack">
+              <article class="node active" data-key="sample-view" style="color: var(--accent)">
+                <h3>View</h3>
+                <p>表示責務の例。</p>
+              </article>
+              <article class="node" data-key="sample-controller" style="color: var(--accent)">
+                <h3>Controller</h3>
+                <p>入力と制御責務の例。</p>
+              </article>
+              <article class="node" data-key="sample-model" style="color: var(--accent)">
+                <h3>Model</h3>
+                <p>意味あるデータとルールの例。</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="diagram" data-diagram="layered">
+            <div class="diagram-header">
+              <h2 data-slot="layered-title">レイヤードアーキテクチャとして見る</h2>
+              <p data-slot="layered-intro">ここにレイヤード観点の説明を入れる。</p>
+            </div>
+            <div class="stack">
+              <article
+                class="node active"
+                data-key="sample-presentation"
+                style="color: var(--accent-2)"
+              >
+                <h3>Presentation</h3>
+                <p>表示や入力窓口。</p>
+              </article>
+              <article class="node" data-key="sample-application" style="color: var(--accent-2)">
+                <h3>Application</h3>
+                <p>ユースケースの流れ。</p>
+              </article>
+              <article class="node" data-key="sample-domain" style="color: var(--accent-2)">
+                <h3>Domain</h3>
+                <p>中心ルール。</p>
+              </article>
+              <article class="node" data-key="sample-infrastructure" style="color: var(--accent-2)">
+                <h3>Infrastructure</h3>
+                <p>外部技術との接続。</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="diagram" data-diagram="clean">
+            <div class="diagram-header">
+              <h2 data-slot="clean-title">クリーンアーキテクチャとして見る</h2>
+              <p data-slot="clean-intro">ここにクリーンアーキテクチャ観点の説明を入れる。</p>
+            </div>
+            <div class="stack">
+              <article
+                class="node active"
+                data-key="sample-entities"
+                style="color: var(--accent-3)"
+              >
+                <h3>Entities</h3>
+                <p>長く残る概念。</p>
+              </article>
+              <article class="node" data-key="sample-usecases" style="color: var(--accent-3)">
+                <h3>Use Cases</h3>
+                <p>ユースケース単位の流れ。</p>
+              </article>
+              <article class="node" data-key="sample-adapters" style="color: var(--accent-3)">
+                <h3>Interface Adapters</h3>
+                <p>境界の変換。</p>
+              </article>
+              <article class="node" data-key="sample-frameworks" style="color: var(--accent-3)">
+                <h3>Frameworks & Drivers</h3>
+                <p>外側の技術。</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="meta-card comparison" id="comparison-panel">
+            <h3>現状案 / 改善案 の比較</h3>
+            <div class="comparison-grid">
+              <div class="comparison-col">
+                <h4>現状</h4>
+                <div class="summary" id="current-list"></div>
+              </div>
+              <div class="comparison-col">
+                <h4>改善案</h4>
+                <div class="summary" id="proposal-list"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="panel right">
+          <section class="meta-card">
+            <h2 id="detail-title">タイトル</h2>
+            <p id="detail-body">ここに詳細説明を入れる。</p>
+          </section>
+          <section class="meta-card">
+            <h3>この層でやること</h3>
+            <div class="summary" id="detail-points"></div>
+          </section>
+          <section class="meta-card">
+            <h3>対応ファイル</h3>
+            <div class="file-list" id="detail-files"></div>
+          </section>
+          <section class="meta-card">
+            <h3>見るときの問い</h3>
+            <div class="summary" id="detail-questions"></div>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const DETAILS = {
+        "sample-view": {
+          title: "View",
+          body: "表示責務のサンプル。",
+          points: ["表示を整える", "ユーザー操作を受ける"],
+          files: ["apps/example/View.tsx"],
+          questions: ["これは表示都合か？"],
+        },
+        "sample-controller": {
+          title: "Controller",
+          body: "制御責務のサンプル。",
+          points: ["入力を受ける", "処理へつなぐ"],
+          files: ["apps/example/controller.ts"],
+          questions: ["これは窓口か？"],
+        },
+        "sample-model": {
+          title: "Model",
+          body: "モデル責務のサンプル。",
+          points: ["意味あるデータ", "中心ルール"],
+          files: ["packages/example/model.ts"],
+          questions: ["これは本質的な業務知識か？"],
+        },
+        "sample-presentation": {
+          title: "Presentation",
+          body: "プレゼンテーション層のサンプル。",
+          points: ["表示", "入力の受け取り"],
+          files: ["apps/example/ui.tsx"],
+          questions: ["見せ方の責務か？"],
+        },
+        "sample-application": {
+          title: "Application",
+          body: "アプリケーション層のサンプル。",
+          points: ["ユースケース", "手順の組み立て"],
+          files: ["apps/example/usecase.ts"],
+          questions: ["流れの責務か？"],
+        },
+        "sample-domain": {
+          title: "Domain",
+          body: "ドメイン層のサンプル。",
+          points: ["概念", "ルール"],
+          files: ["packages/example/domain.ts"],
+          questions: ["技術から独立した知識か？"],
+        },
+        "sample-infrastructure": {
+          title: "Infrastructure",
+          body: "インフラ層のサンプル。",
+          points: ["DB", "外部 API"],
+          files: ["infra/example.ts"],
+          questions: ["技術依存のコードか？"],
+        },
+        "sample-entities": {
+          title: "Entities",
+          body: "エンティティのサンプル。",
+          points: ["安定した概念"],
+          files: ["packages/example/entities.ts"],
+          questions: ["最も内側に置きたいか？"],
+        },
+        "sample-usecases": {
+          title: "Use Cases",
+          body: "ユースケースのサンプル。",
+          points: ["ユーザー価値", "処理の流れ"],
+          files: ["apps/example/usecases.ts"],
+          questions: ["ユースケース単位で説明できるか？"],
+        },
+        "sample-adapters": {
+          title: "Interface Adapters",
+          body: "アダプタのサンプル。",
+          points: ["変換", "橋渡し"],
+          files: ["apps/example/adapters.ts"],
+          questions: ["境界変換が主目的か？"],
+        },
+        "sample-frameworks": {
+          title: "Frameworks & Drivers",
+          body: "最外周の技術サンプル。",
+          points: ["ランタイム", "ライブラリ"],
+          files: ["infra/framework.ts"],
+          questions: ["交換可能な手段か？"],
+        },
+      };
+
+      const currentList = [
+        "現状の責務や混在ポイントをここに入れる",
+        "例: API handler に集計ルールが入っている",
+      ];
+
+      const proposalList = ["改善案をここに入れる", "例: 集計処理を summary service へ切り出す"];
+
+      const tabs = document.querySelectorAll(".view-toggle");
+      const modeButtons = document.querySelectorAll(".mode-toggle");
+      const diagrams = document.querySelectorAll(".diagram");
+      const nodes = document.querySelectorAll(".node");
+      const comparisonPanel = document.getElementById("comparison-panel");
+
+      const titleEl = document.getElementById("detail-title");
+      const bodyEl = document.getElementById("detail-body");
+      const pointsEl = document.getElementById("detail-points");
+      const filesEl = document.getElementById("detail-files");
+      const questionsEl = document.getElementById("detail-questions");
+      const currentEl = document.getElementById("current-list");
+      const proposalEl = document.getElementById("proposal-list");
+
+      function renderRows(target, items, className = "summary-row") {
+        target.innerHTML = "";
+        for (const item of items) {
+          const div = document.createElement("div");
+          div.className = className;
+          div.textContent = item;
+          target.appendChild(div);
+        }
+      }
+
+      function activateNode(key) {
+        const data = DETAILS[key];
+        if (!data) return;
+        nodes.forEach((node) => node.classList.toggle("active", node.dataset.key === key));
+        titleEl.textContent = data.title;
+        bodyEl.textContent = data.body;
+        renderRows(pointsEl, data.points);
+        renderRows(filesEl, data.files, "file-item");
+        renderRows(questionsEl, data.questions);
+      }
+
+      function activateView(view) {
+        tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
+        diagrams.forEach((diagram) =>
+          diagram.classList.toggle("active", diagram.dataset.diagram === view),
+        );
+        const firstNode = document.querySelector(`.diagram[data-diagram="${view}"] .node`);
+        if (firstNode) activateNode(firstNode.dataset.key);
+      }
+
+      function activateMode(mode) {
+        modeButtons.forEach((button) =>
+          button.classList.toggle("active", button.dataset.mode === mode),
+        );
+        comparisonPanel.classList.toggle("active", mode === "proposal");
+      }
+
+      tabs.forEach((tab) => tab.addEventListener("click", () => activateView(tab.dataset.view)));
+      modeButtons.forEach((button) =>
+        button.addEventListener("click", () => activateMode(button.dataset.mode)),
+      );
+      nodes.forEach((node) => node.addEventListener("click", () => activateNode(node.dataset.key)));
+
+      renderRows(currentEl, currentList);
+      renderRows(proposalEl, proposalList);
+      activateView("mvc");
+      activateMode("current-state");
+    </script>
+  </body>
+</html>
