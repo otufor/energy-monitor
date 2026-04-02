@@ -91,6 +91,21 @@ wrangler pages deploy apps/dashboard/dist --project-name energy-monitor
 
 以降は `main` ブランチへの push で GitHub Actions が自動デプロイする。
 
+## 5.1 Notebook (marimo WASM) のデプロイ
+
+`main` ブランチに次のファイル変更が入ると `Deploy Notebook` workflow が自動実行される。
+
+- `notebooks/energy_analysis.py`
+- `notebooks/detailed_energy_analysis.py`
+- `notebooks/index.js`
+- `notebooks/wrangler.jsonc`
+
+デプロイ後の公開 URL:
+
+- `/` : Notebook Hub
+- `/energy/` : `energy_analysis.py`
+- `/detailed/` : `detailed_energy_analysis.py`
+
 ## 6. GitHub Secrets の設定
 
 GitHub リポジトリの Settings → Secrets and variables → Actions に追加:
