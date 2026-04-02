@@ -185,6 +185,14 @@ vp check            # 型チェック + lint + フォーマット
 
 詳細は [docs/api.md](./docs/api.md) を参照。
 
+## Notebook 公開 URL
+
+`Deploy Notebook` workflow で marimo WASM notebook を2本同時にデプロイする。
+
+- `/` : Notebook Hub
+- `/energy/` : 軽量サマリー分析 (`notebooks/energy_analysis.py`)
+- `/detailed/` : 詳細分析 (`notebooks/detailed_energy_analysis.py`)
+
 ## スマートメーター仕様
 
 Nature Remo API から取得する主な ECHONET Lite プロパティ：

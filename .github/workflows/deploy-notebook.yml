@@ -8,6 +8,9 @@ on:
     branches: [main]
     paths:
       - "notebooks/energy_analysis.py"
+      - "notebooks/detailed_energy_analysis.py"
+      - "notebooks/index.js"
+      - "notebooks/wrangler.jsonc"
   workflow_dispatch:
 
 jobs:
@@ -22,12 +25,18 @@ jobs:
           enable-cache: false
 
       - name: Install marimo
-        run: uv tool install marimo --with altair
+        run: uv tool install marimo --with altair --with pandas --with pyarrow
 
-      - name: Export WASM notebook
+      - name: Export WASM notebooks
         run: |
           marimo export html-wasm notebooks/energy_analysis.py \
-            -o notebooks/wasm \
+            -o notebooks/wasm/energy \
+            --include-cloudflare \
+            --mode run \
+            --force
+
+          marimo export html-wasm notebooks/detailed_energy_analysis.py \
+            -o notebooks/wasm/detailed \
             --include-cloudflare \
             --mode run \
             --force
