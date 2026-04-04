@@ -112,6 +112,16 @@ def _(datetime, mo):
     today = datetime.now().date().isoformat()
     start_date_input = mo.ui.date(value=today, label="開始日 (JST)")
     end_date_input = mo.ui.date(value=today, label="終了日 (JST)")
+    start_time_input = mo.ui.text(
+        value="00:00",
+        label="開始時刻 (HH:MM, JST)",
+        full_width=True,
+    )
+    end_time_input = mo.ui.text(
+        value="23:59",
+        label="終了時刻 (HH:MM, JST)",
+        full_width=True,
+    )
     rolling_window_input = mo.ui.slider(
         start=3,
         stop=120,
@@ -137,15 +147,18 @@ def _(datetime, mo):
     filter_controls = mo.vstack(
         [
             mo.hstack([start_date_input, end_date_input]),
+            mo.hstack([start_time_input, end_time_input]),
             mo.hstack([rolling_window_input, top_n_input], widths="equal"),
             threshold_input,
         ]
     )
     filter_controls
     return (
+        end_time_input,
         end_date_input,
         rolling_window_input,
         start_date_input,
+        start_time_input,
         threshold_input,
         top_n_input,
     )
@@ -190,10 +203,12 @@ def _(
     api_key_input,
     api_url_input,
     datetime,
+    end_time_input,
     end_date_input,
     json,
     mo,
     start_date_input,
+    start_time_input,
     sys,
     time,
     timedelta,
@@ -214,12 +229,16 @@ def _(
         except Exception:
             return False
 
-    def to_iso_range(date_text: str, end_of_day: bool) -> str:
-        selected = datetime.fromisoformat(date_text).date()
-        selected_time = time(23, 59, 59) if end_of_day else time(0, 0, 0)
+    def parse_jst_datetime(date_text: str, time_text: str) -> str:
+        selected_date = datetime.fromisoformat(date_text).date()
+        normalized_time = time_text.strip()
+        try:
+            parsed_time = datetime.strptime(normalized_time, "%H:%M").time()
+        except ValueError:
+            raise ValueError("時刻は HH:MM 形式で指定してください。")
         return datetime.combine(
-            selected,
-            selected_time,
+            selected_date,
+            time(parsed_time.hour, parsed_time.minute, 0),
             tzinfo=timezone(timedelta(hours=9)),
         ).isoformat()
 
@@ -253,8 +272,21 @@ def _(
     if start_date_input.value > end_date_input.value:
         mo.stop(True, mo.callout("開始日が終了日より後になっています。", kind="warn"))
 
-    from_iso = to_iso_range(start_date_input.value.isoformat(), end_of_day=False)
-    to_iso = to_iso_range(end_date_input.value.isoformat(), end_of_day=True)
+    try:
+        from_iso = parse_jst_datetime(
+            start_date_input.value.isoformat(),
+            start_time_input.value,
+        )
+        to_iso = parse_jst_datetime(
+            end_date_input.value.isoformat(),
+            end_time_input.value,
+        )
+    except ValueError as exc:
+        mo.stop(True, mo.callout(str(exc), kind="warn"))
+
+    if from_iso > to_iso:
+        mo.stop(True, mo.callout("開始日時が終了日時より後になっています。", kind="warn"))
+
     request_path = "/api/power/range?" + urllib.parse.urlencode(
         {
             "from": from_iso,
@@ -272,8 +304,8 @@ def _(
 
             - API URL: `{api_url_input.value.rstrip("/")}`
             - Request Path: `{request_path}`
-            - From (JST): `{start_date_input.value.isoformat()} 00:00:00+09:00`
-            - To (JST): `{end_date_input.value.isoformat()} 23:59:59+09:00`
+            - From (JST): `{from_iso}`
+            - To (JST): `{to_iso}`
             - Runtime: `{sys.platform}`
             """
         )
