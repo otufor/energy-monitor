@@ -353,7 +353,36 @@ def _(
         .rolling(f"{max(int(rolling_window_input.value), 1)}min")
         .mean()
     ).reset_index(drop=True)
-    return load_threshold_watts, plot_power_df, power_df
+
+    period_span = plot_power_df["ts_jst"].max() - plot_power_df["ts_jst"].min()
+    period_days = max(period_span.total_seconds() / 86400, 0)
+
+    if period_days <= 2:
+        display_freq = "5min"
+        display_granularity_label = "5分表示"
+    elif period_days <= 7:
+        display_freq = "15min"
+        display_granularity_label = "15分表示"
+    elif period_days <= 31:
+        display_freq = "1h"
+        display_granularity_label = "1時間表示"
+    else:
+        display_freq = "1d"
+        display_granularity_label = "1日表示"
+
+    display_power_df = (
+        plot_power_df.set_index("ts_jst")
+        .resample(display_freq)
+        .agg(
+            watts=("watts", "mean"),
+            rolling_watts=("rolling_watts", "mean"),
+            cum_kwh=("cum_kwh", "last"),
+            is_gap=("is_gap", "max"),
+        )
+        .dropna(subset=["watts", "rolling_watts"])
+        .reset_index()
+    )
+    return display_granularity_label, display_power_df, load_threshold_watts, plot_power_df, power_df
 
 
 @app.cell
@@ -603,8 +632,8 @@ def _(mo, pd, plot_power_df, power_df, rolling_window_input):
 
 
 @app.cell
-def _(alt, load_threshold_watts, mo, pd, plot_power_df):
-    timeseries_base = alt.Chart(plot_power_df).encode(
+def _(alt, display_granularity_label, display_power_df, load_threshold_watts, mo, pd):
+    timeseries_base = alt.Chart(display_power_df).encode(
         x=alt.X("ts_jst:T", title="Timestamp (JST)"),
         tooltip=[
             alt.Tooltip("ts_jst:T", title="時刻"),
@@ -627,15 +656,14 @@ def _(alt, load_threshold_watts, mo, pd, plot_power_df):
         .encode(y="threshold:Q")
     )
     gap_points = (
-        alt.Chart(plot_power_df.loc[plot_power_df["is_gap"]])
+        alt.Chart(display_power_df.loc[display_power_df["is_gap"]])
         .mark_point(color="#7c3aed", shape="diamond", size=80)
         .encode(x="ts_jst:T", y="watts:Q")
     )
 
-    power_timeseries_chart = (_raw_line + _rolling_line + _threshold_rule + gap_points).properties(
-        height=360,
-        title="時系列推移と移動平均",
-    )
+    power_timeseries_chart = (
+        _raw_line + _rolling_line + _threshold_rule + gap_points
+    ).properties(height=360, title=f"時系列推移と移動平均 ({display_granularity_label})")
     _chart = mo.ui.altair_chart(power_timeseries_chart)
     _chart
     return
